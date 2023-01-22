@@ -3,10 +3,11 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const todoSchema = require("../schemas/todoSchema");
 const Todo = new mongoose.model("Todo", todoSchema);
-
+const checkLogin = require("../middleWares/checkLogin");
 //Get all the todo
-router.get("/", async (req, res) => {
+router.get("/", checkLogin, async (req, res) => {
   try {
+    console.log(req.username)
     // const newTodo = new Todo(req.body);
     const allTodo = await Todo.find({});
     res.status(200).json({
@@ -84,7 +85,7 @@ router.put("/:id", async (req, res) => {
         new: true,
       }
     );
-    console.log(updatedDoc);
+
     res.status(200).json({
       status: true,
       message: "Todo was updated successfully",
