@@ -3,13 +3,17 @@ const router = express.Router();
 const mongoose = require("mongoose");
 const todoSchema = require("../schemas/todoSchema");
 const Todo = new mongoose.model("Todo", todoSchema);
+const userSchema = require("../schemas/userSchema");
+const User = new mongoose.model("User", userSchema);
 const checkLogin = require("../middleWares/checkLogin");
 //Get all the todo
 router.get("/", checkLogin, async (req, res) => {
   try {
-    console.log(req.username)
+    console.log(req.username);
     // const newTodo = new Todo(req.body);
-    const allTodo = await Todo.find({});
+    const allTodo = await Todo.find({})
+      .populate("user", "name username -_id")
+      .select({ _id: 0, __v: 0, date: 0 });
     res.status(200).json({
       status: true,
       resultSet: allTodo,
@@ -23,7 +27,7 @@ router.get("/", checkLogin, async (req, res) => {
 });
 
 //Get todo by id
-router.get("/:id", async (req, res) => {
+router.get("/:id", checkLogin, async (req, res) => {
   try {
     const todo = await Todo.findOne({ _id: req.params.id });
     res.status(200).json({
@@ -39,10 +43,22 @@ router.get("/:id", async (req, res) => {
 });
 
 //Post a todo
-router.post("/", async (req, res) => {
+router.post("/", checkLogin, async (req, res) => {
   try {
-    const newTodo = new Todo(req.body);
-    await newTodo.save();
+    const newTodo = new Todo({
+      ...req.body,
+      user: req.userId,
+    });
+
+    const todo = await newTodo.save();
+    await User.updateOne(
+      { _id: req.userId },
+      {
+        $push: {
+          todos: todo._id,
+        },
+      }
+    );
     res.status(200).json({
       status: true,
       message: "Todo was inserted successfully",
@@ -56,7 +72,7 @@ router.post("/", async (req, res) => {
 });
 
 //Get all todo
-router.post("/all", async (req, res) => {
+router.post("/all", checkLogin, async (req, res) => {
   try {
     await Todo.insertMany(req.body);
     res.status(200).json({
@@ -72,7 +88,7 @@ router.post("/all", async (req, res) => {
 });
 
 //Update a todo
-router.put("/:id", async (req, res) => {
+router.put("/:id", checkLogin, async (req, res) => {
   try {
     const updatedDoc = await Todo.findByIdAndUpdate(
       { _id: req.params.id },
@@ -99,7 +115,7 @@ router.put("/:id", async (req, res) => {
 });
 
 //Delete a todo
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", checkLogin, async (req, res) => {
   try {
     const todo = await Todo.deleteOne({ _id: req.params.id });
     res.status(200).json({

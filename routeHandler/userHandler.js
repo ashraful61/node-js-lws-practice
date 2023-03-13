@@ -65,10 +65,26 @@ router.post("/login", async (req, res) => {
     }
   } catch (err) {
     res.status(401).json({
-        error: "Authentication failed!",
-        status: true,
-      });
+      error: "Authentication failed!",
+      status: true,
+    });
   }
 });
 
+//Get all users
+
+router.get("/all", async (req, res) => {
+  try {
+    const users = await User.find({}).populate("todos");
+    res.status(200).json({
+      status: true,
+      resultSet: users,
+    });
+  } catch (err) {
+    res.status(401).json({
+      error: "There was an error on server side",
+      status: false,
+    });
+  }
+});
 module.exports = router;
